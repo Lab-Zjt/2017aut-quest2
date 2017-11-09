@@ -115,7 +115,12 @@ int size(VectorDescriptor* desc)
 }
 void erase(VectorDescriptor* desc,VectorIterator iter)//????
 {
-    iter.ptr=NULL;
+    for(;iter.ptr!=desc->vector->last.ptr-1;)
+    {
+        iter.ptr[0]=iter.ptr[1];
+        iter.ptr++;
+    }
+    desc->vector->last.ptr=iter.ptr;
 }
 void shrink_to_fit(VectorDescriptor* desc)
 {
