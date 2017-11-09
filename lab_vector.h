@@ -4,9 +4,7 @@
 typedef int DataType ;
 struct lab__vector_st
 {
-    DataType * begin;
-    int size;
-    int capacity;
+    struct lab__vector_api_st* vector;
 };
 
 struct lab__vector_iter_st
@@ -19,6 +17,9 @@ typedef struct lab__vector_st VectorDescriptor;
 typedef struct lab__vector_iter_st VectorIterator;
 
 struct lab__vector_api_st{
+    VectorIterator first;
+    VectorIterator last;
+    VectorIterator storage_end;
     VectorDescriptor (*constructor)();
     void (*push_back)(VectorDescriptor* desc,void* elem,int size);
     VectorIterator (*begin)(VectorDescriptor* desc);
@@ -43,92 +44,100 @@ extern VectorAPI vector;
 VectorDescriptor constructor()//???????
 {
     VectorDescriptor temp;
-    temp.begin=(DataType*)malloc(sizeof(DataType));
-    temp.capacity=1;
-    temp.size=1;
+    temp.vector->first.ptr=(DataType*)malloc(sizeof(DataType));
+    temp.vector->last.ptr=temp.vector->first.ptr;
+    temp.vector->storage_end.ptr=temp.vector->first.ptr;
+    temp.vector->begin=begin;
+    temp.vector->end=end;
+    temp.vector->push_back=push_back;
+    temp.vector->size=size;
+    temp.vector->capacity=capacity;
+    temp.vector->reserve=reserve;
+    temp.vector->clear=clear;
+    temp.vector->pop_back=pop_back;
+    temp.vector->destructor=destructor;
+    temp.vector->shrink_to_fit=shrink_to_fit;
+    temp.vector->iter_move=iter_move;
+    temp.vector->iter_dereference=iter_dereference;
+    temp.vector->erase=erase;
     return temp;
 }
 void push_back(VectorDescriptor* desc,void* elem,int size)
 {
-    if(desc->size>=desc->capacity)
+    if(desc->vector->last==desc->vector->storage_end)
     {
-        reserve(desc,desc->capacity*2);
+        reserve(desc,desc->vector->capacity(desc)*2);
     }
-    desc[desc->size]=*elem;
-    desc->size++;
+    desc->vector->last.ptr[0]=*elem;
+    desc->vector->last.ptr=&desc->vector->last.ptr[1];
 }
 void* iter_dereference(VectorIterator iter)//?????
 {
-    free(iter.begin);
+    return iter.ptr;
 }
 void clear(VectorDescriptor* desc)
 {
     for(int i=0;i<desc->size;i++)
     {
-        desc->begin[i]=0;
+        desc->vector->first[i]=0;
     }
-    desc->size=0;
+    desc->vector->last=desc->vector->first;
 }
 void destructor(VectorDescriptor* desc)
 {
     clear(desc);
-    free(desc);
+    free(desc->vector->first);
 }
 VectorIterator begin(VectorDescriptor* desc)//??????
 {
-    VectorIterator temp;
-    temp.ptr=desc->begin;
-    return temp;
+    return desc->vector->first;
 }
 VectorIterator end(VectorDescriptor* desc)//??????
 {
-    VectorIterator temp;
-    temp.ptr=&desc->begin[desc->size];
-    return temp;
+    return desc->vector->last;
 }
 VectorIterator iter_move(VectorIterator iter,int delta)////????
 {
-    iter.ptr=&iter.ptr[delta];
+    return (&iter[delta]);
 }
 void pop_back(VectorDescriptor* desc)
 {
-    desc->begin[desc->size]=0;
-    desc->size--;
+    *desc->vector->last=NULL;
+    desc->vector->last=desc->vector->last-1;
 }
 int capacity(VectorDescriptor* desc)
 {
-    return desc->capacity;
+    return (desc->vector->storage_end-desc->vector->first);
 }
 int size(VectorDescriptor* desc)
 {
-    return desc->size;
+    return (desc->vector->last-desc->vector->first-1);
 }
 void erase(VectorDescriptor* desc,VectorIterator iter)//????
 {
-
+    iter.ptr=NULL;
 }
 void shrink_to_fit(VectorDescriptor* desc)
 {
-    desc->capacity=desc->size;
+    free(desc->vector->storage_end.ptr);
+    desc->vector->storage_end.ptr=desc->vector->last.ptr;
 }
 void reserve(VectorDescriptor* desc,int resv_size)
 {
-    if(resv_size>desc->capacity)
+    if(resv_size>desc->vector->capacity())
     {
-        DataType *temp = (VectorDescriptor *) malloc(sizeof(DataType) * resv_size);
+        DataType *temp = (DataType *) malloc(sizeof(DataType) * resv_size);
         for (int i = 0 ; i < desc->size ; i ++)
         {
-            temp[i] = desc->begin[i];
+            temp[i] = desc->vector.first[i];
         }
-        DataType *t = desc->begin;
-        desc->begin = temp;
-        free(t);
-
+        free(desc->vector->first.ptr);
+        desc->vector->first.ptr = temp;
+        desc->vector->storage_end.ptr = temp + resv_size;
+        desc->vector->last.ptr=desc->vector->first.ptr+desc->vector->size(desc)+1;
     }
-}
-int main()
-{
-    VectorDescriptor testvd;
-    VectorAPI testvt;
-    printf("%d",testvt.begin(testvd).ptr);
+    else
+    {
+        printf("The new size is small than old size.\n");
+    }
 }
