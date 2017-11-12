@@ -1,6 +1,7 @@
 #ifndef LAB_LIST_H
 #define LAB_LIST_H
 
+#include <string.h>
 typedef struct listnode
 {
     void* data;
@@ -45,50 +46,55 @@ typedef struct lab__list_api_st ListAPI;
 extern ListAPI list;
 
 #endif
-list={
-        constructor,
-        push_back,
-        begin,
-        end,
-        iter_dereference,
-        iter_next,
-        iter_prev,
-        size,
-        pop_front,
-        pop_back,
-        erase,
-        clear,
-        destructor
-};
+
 ListDescriptor constructor()
 {
     ListDescriptor temp;
     ListNode* init_node=(ListNode*)malloc(sizeof(ListNode));
     temp.first=init_node;
     temp.last=init_node;
+    temp.size=0;
     return temp;
+}
+void push_front(ListDescriptor* desc,void* elem,int size)
+{
+    ListNode* new_node=(ListNode*)malloc(sizeof(ListNode));
+    new_node->data=malloc(size);
+    memcpy(new_node->data,elem,size);
+    if(desc->first!=desc->last)
+    {
+        new_node->next=desc->first;
+        new_node->prev=desc->last;
+        desc->last->next=new_node;
+        desc->first->prev=new_node;
+    }
+    else
+    {
+        new_node->prev=desc->last;
+        new_node->next=desc->last;
+        desc->last->next=new_node;
+        desc->last->prev=new_node;
+    }
+    desc->first=new_node;
+    desc->size++;
 }
 void push_back(ListDescriptor* desc,void* elem,int size)
 {
-    ListNode* new_node=(ListNode*)malloc(sizeof(ListNode));
-    new_node->data=malloc(size);
-    memcpy(new_node->data,elem,size);
-    new_node->next=desc->last;
-    new_node->prev=desc->last->prev;
-    desc->last->prev=new_node;
-    desc->size++;
-}
-void (*push_front)(ListDescriptor* desc,void* elem,int size)
-{
-    ListNode* new_node=(ListNode*)malloc(sizeof(ListNode));
-    new_node->data=malloc(size);
-    memcpy(new_node->data,elem,size);
-    new_node->next=desc->first;
-    new_node->prev=desc->last;
-    desc->last->next=new_node;
-    desc->first->prev=new_node;
-    desc->first=new_node;
-    desc->size++;
+    if(desc->first!=desc->last)
+    {
+        ListNode* new_node=(ListNode*)malloc(sizeof(ListNode));
+        new_node->data=malloc(size);
+        memcpy(new_node->data,elem,size);
+        new_node->next=desc->last;
+        new_node->prev=desc->last->prev;
+        desc->last->prev->next=new_node;
+        desc->last->prev=new_node;
+        desc->size++;
+    }
+    else
+    {
+        push_front(desc,elem,size);
+    }
 }
 ListIterator begin(ListDescriptor* desc)
 {
@@ -104,7 +110,7 @@ ListIterator end(ListDescriptor* desc)
 }
 void* iter_dereference(ListIterator iter)
 {
-    return iter.ptr;
+    return iter.ptr->data;
 }
 ListIterator iter_next(ListIterator iter)
 {
