@@ -1,19 +1,20 @@
 #ifndef LAB_VECTOR_H
 #define LAB_VECTOR_H
 
-#include <stdlib.h>
+#include <string.h>
 
-typedef double DataType;
 struct lab__vector_st
 {
-    DataType *begin;
-    DataType *end;
-    DataType *storage_end;
+    void *begin;
+    void *end;
+    void *storage_end;
+    int data_size;
 };
 
 struct lab__vector_iter_st
 {
-    DataType *ptr;
+    void *ptr;
+    int data_size;
 };
 
 // NOT MODIFY BELOW
@@ -45,66 +46,76 @@ extern VectorAPI vector;
 VectorDescriptor constructor()
 {
     VectorDescriptor temp;
-    temp.begin=(DataType *)malloc(sizeof(double)*2);
-    temp.storage_end=&(temp.begin[1]);
-    temp.end=temp.begin;
+    temp.begin=NULL;
+    temp.storage_end=NULL;
+    temp.end=NULL;
+    temp.data_size=0;
     return temp;
 }
 int size(VectorDescriptor* desc)
 {
-    return (desc->end-desc->begin);
+    int  size=((char*)desc->end-(char*)desc->begin);
+    return size/desc->data_size;
 }
 void reserve(VectorDescriptor* desc,int resv_size)
 {
-    int now_size=size(desc);
-    DataType *p=desc->begin;
+    int data_size=desc->data_size;
+    int now_size=(char*)desc->end-(char*)desc->begin+data_size;
     if(now_size<resv_size)
     {
-        DataType *temp=(DataType*)malloc(sizeof(DataType)*resv_size);
-        for(int i=0;i<now_size;i++)
+        void *temp=malloc(resv_size);
+        for(int i=0;i<now_size;i+=desc->data_size)
         {
-            temp[i]=p[i];
+            memcpy(temp+i,desc->begin+i,data_size);
         }
-        p=&(p[1]);
-        /*for(;p!=desc->end;)
-        {
-            free(&(p[-1]));
-        }*/
         free(desc->begin);
         desc->begin=temp;
-        desc->end=&(temp[now_size]);
-        desc->storage_end=&(temp[resv_size]);
+        desc->end=temp+now_size-data_size;
+        desc->storage_end=temp+resv_size-data_size;
     }
-    else
+    /*else
     {
         printf("Error.The new size is NOT large than now.\n");
-    }
+    }*/
 }
 void push_back(VectorDescriptor* desc,void* elem,int size)
 {
-    //memcpy(desc->end,elem,size);
-    if(desc->end==desc->storage_end)
+    if(!desc->data_size)
     {
-        reserve(desc,(desc->end-desc->begin)*2);
+        desc->begin=malloc(size*2);
+        desc->data_size=size;
+        desc->end=desc->begin;
+        desc->storage_end=desc->begin+desc->data_size;
+        memcpy(desc->end,elem,desc->data_size);
+        desc->end += desc->data_size;
     }
-    desc->end[0]=*((DataType*)elem);
-    desc->end=&(desc->end[1]);
+    else
+    if(size!=desc->data_size)
+    {
+        // printf("The size of elements MUST be same in the same vector.\n");
+    }
+    else
+    {
+        if (desc->end == desc->storage_end)
+        {
+            reserve(desc, ((char*)desc->end - (char*)desc->begin+desc->data_size) * 2);
+        }
+        memcpy(desc->end,elem,desc->data_size);
+        desc->end += desc->data_size;
+    }
 }
 VectorIterator begin(VectorDescriptor* desc)
 {
     VectorIterator temp;
     temp.ptr=desc->begin;
+    temp.data_size=desc->data_size;
     return temp;
 }
 VectorIterator end(VectorDescriptor* desc)
 {
     VectorIterator temp;
-    if(desc->end==desc->begin)
-    {
-        temp.ptr=desc->end;
-        return temp;
-    }
-    temp.ptr=&(desc->end[-1]);
+    temp.ptr=desc->end;
+    temp.data_size=desc->data_size;
     return temp;
 }
 void* iter_dereference(VectorIterator iter)
@@ -113,54 +124,36 @@ void* iter_dereference(VectorIterator iter)
 }
 VectorIterator iter_move(VectorIterator iter,int delta)
 {
-    iter.ptr=&(iter.ptr[delta]);
+    iter.ptr+=iter.data_size;
     return iter;
 }// simulates: iter+8;
 void pop_back(VectorDescriptor* desc)
 {
-    desc->end[-1]=0;
-    desc->end=&(desc->end[-1]);
+    desc->end-=desc->data_size;
 }
 void erase(VectorDescriptor* desc,VectorIterator iter)
 {
+    int data_size=desc->data_size;
     for(;iter.ptr<desc->end;)
     {
-        *(iter.ptr)=iter.ptr[1];
-        iter.ptr++;
+        memcpy(iter.ptr,iter.ptr+data_size,data_size);
+        iter.ptr+=data_size;
     }
-    desc->end=&(desc->end[-1]);
+    desc->end-=data_size;
 }
 void clear(VectorDescriptor* desc)
 {
-    DataType *p=desc->begin;
-    for(;p<desc->end;)
-    {
-        *p=0;
-        p=&(p[1]);
-    }
     desc->end=desc->begin;
 }
 void destructor(VectorDescriptor* desc)
 {
-    /*DataType *p=&(desc->begin[1]);
-    for(;p<=desc->end;)
-    {
-        free(&(p[-1]));
-    }
-    free(p);*/
     free(desc->begin);
 }
 int capacity(VectorDescriptor* desc)
 {
-    return (desc->storage_end-desc->begin);
+    return ((char*)desc->storage_end-(char*)desc->begin+desc->data_size)/(desc->data_size);
 }
 void shrink_to_fit(VectorDescriptor* desc)
 {
-    /*DataType *p=&(desc->end[2]);
-    for(;p!=desc->storage_end;)
-    {
-        free(&(p[-1]));
-    }
-    free(p);*/
     desc->storage_end=desc->end;
 }
