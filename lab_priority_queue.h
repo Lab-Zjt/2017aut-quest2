@@ -1,16 +1,17 @@
 #ifndef LAB_PRIORITY_QUEUE
 #define LAB_PRIORITY_QUEUE
 
-#include <cstdlib>
+#include <string.h>
 #include "labafx.h"
 
-typedef double DataType;
+
 struct lab__priority_queue_st
 {
-    DataType *begin;
-    DataType *end;
-    DataType *storage_end;
+    void *begin;
+    void *end;
+    void *storage_end;
     Comparator cmp;
+    int data_size;
 };
 
 
@@ -33,7 +34,7 @@ typedef struct lab__priority_queue_api_st PriorityQueueAPI;
 extern PriorityQueueAPI prq;
 
 #endif
-int default_compfunc_max_heap(void* a,int asize,void* b,int bsize)
+/*int default_compfunc_max_heap(void* a,int asize,void* b,int bsize)
 {
     if(*(DataType*)a>(*(DataType*)b))
     {
@@ -43,65 +44,66 @@ int default_compfunc_max_heap(void* a,int asize,void* b,int bsize)
     {
         return 0;
     }
-}
+}*/
 PriorityQueueDescriptor constructor(Comparator compfunc)
 {
     PriorityQueueDescriptor temp;
-    temp.begin=(DataType *)malloc(sizeof(double)*2);
-    temp.storage_end=&(temp.begin[1]);
-    temp.end=temp.storage_end;
-    if(compfunc!=NULL)
-    {
-        temp.cmp=compfunc;
-    }
-    else
-    {
-        temp.cmp=default_compfunc_max_heap;
-    }
+    temp.begin=NULL;
+    temp.storage_end=NULL;
+    temp.end=NULL;
+    temp.cmp=compfunc;
+    temp.data_size=0;
     return temp;
 }
 int size(PriorityQueueDescriptor* desc)
 {
-    return (desc->end-desc->begin-1);
+    return ((char*)desc->end-(char*)desc->begin)/desc->data_size-1;
 }
 void push(PriorityQueueDescriptor* desc,void* key,int size)
 {
+    if(!desc->data_size)
+    {
+        desc->begin=malloc(sizeof(size)*2);
+        desc->data_size=size;
+        desc->end=desc->begin+size;
+        desc->storage_end=desc->end;
+    }
     if(desc->end==desc->storage_end)
     {
-        int now_size = desc->end-desc->begin;
-        DataType *p = desc->begin;
-        DataType *temp = (DataType *) malloc(sizeof(DataType) * now_size*2);
-        for (int i = 0 ; i < now_size ; i ++)
+        int now_size=(char*)desc->storage_end-(char*)desc->begin+size;
+        void* temp=malloc(now_size*2);
+        for(int i=0;i<now_size;i+=size)
         {
-            temp[i] = p[i];
+            memcpy(temp+i,desc->begin+i,size);
         }
-        p = &(p[1]);
         free(desc->begin);
-        desc->begin = temp;
-        desc->end = &(temp[now_size]);
-        desc->storage_end = &(temp[now_size*2]);
+        desc->begin=temp;
+        desc->end=desc->begin+now_size-size;
+        desc->storage_end=desc->begin+now_size*2-size;
     }
-    desc->end[0]=*((DataType*)key);
-    desc->end=&(desc->end[1]);
-    int p=desc->end-desc->begin-1;
-    for(;(p/2)!=0&&desc->cmp(&(desc->begin[p]),size,&(desc->begin[p/2]),size);p/=2)
+    memcpy(desc->end,key,size);
+    desc->end+=size;
+    int p=(char*)desc->end-(char*)desc->begin-desc->data_size;
+    for(int father=p/2-(p/2)%size;father>=size&&desc->cmp(desc->begin+p,size,desc->begin+father,size);p=father,father=p/2-(p/2)%size)
     {
-        DataType t=desc->begin[p];
-        desc->begin[p]=desc->begin[p/2];
-        desc->begin[p/2]=t;
+        void* t=malloc(size);
+        memcpy(t,desc->begin+p,size);
+        memcpy(desc->begin+p,desc->begin+father,size);
+        memcpy(desc->begin+father,t,size);
+        free(t);
     }
 }
 void* top(PriorityQueueDescriptor* desc)
 {
-    return &(desc->begin[1]);
+    return (desc->begin+desc->data_size);
 }
 void pop(PriorityQueueDescriptor* desc)
 {
-    desc->begin[1]=desc->end[-1];
-    desc->end[-1]=0;
-    desc->end=&(desc->end[-1]);
-    int p=size(desc);
-    for(int i=1;i*2<=p;)
+    memcpy(desc->begin+desc->data_size,desc->end-desc->data_size,desc->data_size);
+    desc->end=desc->end-desc->data_size;
+    int p=(char*)desc->end-(char*)desc->begin;
+    const int ds=desc->data_size;
+    for(int i=ds;i*2<=p;)
     {
         int max;
         if(i*2==p)
@@ -110,32 +112,38 @@ void pop(PriorityQueueDescriptor* desc)
         }
         else
         {
-            max=(desc->cmp(&desc->begin[i*2],NULL,&desc->begin[i*2+1],NULL))?(i*2):(i*2+1);
+            max=(desc->cmp(desc->begin+i*2,ds,desc->begin+i*2+ds,ds))?(i*2):(i*2+ds);
         }
-        if(desc->begin[i]>=desc->begin[max])
+        if(desc->cmp(desc->begin+i,ds,desc->begin+max,ds))
         {
             break;
         }
         else
         {
-            DataType t=desc->begin[i];
-            desc->begin[i]=desc->begin[max];
-            desc->begin[max]=t;
+            void *t=malloc(ds);
+            memcpy(t,desc->begin+i,ds);
+            memcpy(desc->begin+i,desc->begin+max,ds);
+            memcpy(desc->begin+max,t,ds);
+            free(t);
             i=max;
         }
     }
 }
 void clear(PriorityQueueDescriptor* desc)
 {
-    DataType *p=&(desc->begin[1]);
-    for(;p<desc->end;)
-    {
-        *p=0;
-        p=&(p[1]);
-    }
-    desc->end=&desc->begin[1];
+    desc->end=desc->begin+desc->data_size;
 }
 void destructor(PriorityQueueDescriptor* desc)
 {
     free(desc->begin);
 }
+PriorityQueueAPI prq=
+        {
+                constructor,
+                size,
+                push,
+                top,
+                pop,
+                clear,
+                destructor
+        };

@@ -157,3 +157,20 @@ void shrink_to_fit(VectorDescriptor* desc)
 {
     desc->storage_end=desc->end;
 }
+VectorAPI vector=
+        {
+                constructor,
+                push_back,
+                begin,
+                end,
+                iter_dereference,
+                iter_move,
+                size,
+                pop_back,
+                erase,
+                clear,
+                destructor,
+                capacity,
+                shrink_to_fit,
+                reserve
+        };

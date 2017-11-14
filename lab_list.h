@@ -167,3 +167,20 @@ void destructor(ListDescriptor* desc)
     clear(desc);
     free(desc->first);
 }
+ListAPI list=
+        {
+                constructor,
+                push_back,
+                push_front,
+                begin,
+                end,
+                iter_dereference,
+                iter_next,
+                iter_prev,
+                size,
+                pop_front,
+                pop_back,
+                erase,
+                clear,
+                destructor
+        };
