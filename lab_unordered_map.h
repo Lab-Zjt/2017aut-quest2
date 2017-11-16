@@ -264,3 +264,17 @@ void destructor(UnorderedMapDescriptor *desc)
     clear(desc);
     free(desc->begin);
 }
+UnorderedMapAPI um={
+                        constructor,
+                        size,
+                        insert,
+                        erase,
+                        clear,
+                        begin,
+                        end,
+                        iter_next,
+                        iter_prev,
+                        iter_dereference,
+                        find,
+                        destructor
+};
