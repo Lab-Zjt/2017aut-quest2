@@ -4,8 +4,8 @@
 #include "labafx.h"
 typedef struct hash_list_node
 {
-    struct hash_list_node next;
-    struct hash_list_node prev;
+    struct hash_list_node* next;
+    struct hash_list_node* prev;
     Pair* pair;
 }HashListNode;
 typedef struct hash_bucket
@@ -20,8 +20,10 @@ struct lab__unordered_map_st
     int size;
 };
 
-struct lab__unordered_map_iter_st{
-
+struct lab__unordered_map_iter_st
+{
+    HashListNode* ptr;
+    HashBucket* bucket;
 };
 
 // DO NOT MODIFY BELOW
@@ -118,7 +120,27 @@ void insert(UnorderedMapDescriptor* desc,Pair kvpair)
         new_node->prev=NULL;
     }
 }
-void (*erase)(UnorderedMapDescriptor* desc,UnorderedMapIterator iter);
+void erase(UnorderedMapDescriptor* desc,UnorderedMapIterator iter)
+{
+    if(iter.ptr->prev!=NULL)
+    {
+        iter.ptr->prev->next=iter.ptr->next;
+
+    }
+    else
+    {
+        iter.bucket->first=NULL;
+    }
+    if(iter.ptr->next!=NULL)
+    {
+        iter.ptr->next=iter.ptr->prev;
+    }
+    free(iter.ptr->pair->key);
+    free(iter.ptr->pair->value);
+    free(iter.ptr->pair);
+    free(iter.ptr);
+    desc->size--;
+}
 void clear(UnorderedMapDescriptor* desc)
 {
     int size=desc->end-desc->begin;
@@ -143,10 +165,102 @@ void clear(UnorderedMapDescriptor* desc)
         }
     }
 }
-UnorderedMapIterator (*begin)(UnorderedMapDescriptor* desc);
-UnorderedMapIterator (*end)(UnorderedMapDescriptor* desc);
-UnorderedMapIterator (*iter_next)(UnorderedMapIterator it);
-UnorderedMapIterator (*iter_prev)(UnorderedMapIterator it);
-Pair (*iter_dereference)(UnorderedMapIterator it);
-UnorderedMapIterator (*find)(UnorderedMapDescriptor* desc,void* key,int keysize);
-void (*destructor)(UnorderedMapDescriptor *desc);
+UnorderedMapIterator begin(UnorderedMapDescriptor* desc)
+{
+    int i=0;
+    for(;desc->begin[i].first==NULL;)
+    {
+        i++;
+    }
+    UnorderedMapIterator temp;
+    temp.bucket=&(desc->begin[i]);
+    temp.ptr=desc->begin[i].first;
+    return temp;
+}
+UnorderedMapIterator end(UnorderedMapDescriptor* desc)
+{
+    int i=0;
+    for(;desc->end[i].first==NULL;)
+    {
+        i--;
+    }
+    UnorderedMapIterator temp;
+    HashListNode* p=desc->end[i].first;
+    for(;p->next!=NULL;)
+    {
+        p=p->next;
+    }
+    temp.ptr=p;
+    temp.bucket=&(desc->end[i]);
+    return temp;
+}
+UnorderedMapIterator iter_next(UnorderedMapIterator it)
+{
+    if(it.ptr->next!=NULL)
+    {
+        it.ptr=it.ptr->next;
+    }
+    else
+    {
+        int i=1;
+        for(;it.bucket[i].first==NULL;)
+        {
+            i++;
+        }
+        it.bucket=&(it.bucket[i]);
+        it.ptr=it.bucket->first;
+    }
+    return it;
+}
+UnorderedMapIterator iter_prev(UnorderedMapIterator it)
+{
+    if(it.ptr->prev!=NULL)
+    {
+        it.ptr=it.ptr->prev;
+    }
+    else
+    {
+        int i=-1;
+        for(;it.bucket[i].first==NULL;)
+        {
+            i--;
+        }
+        it.bucket=&(it.bucket[i]);
+        HashListNode* p=it.bucket->first;
+        for(;p->next!=NULL;)
+        {
+            p=p->next;
+        }
+        it.ptr=p;
+    }
+    return it;
+}
+Pair iter_dereference(UnorderedMapIterator it)
+{
+    return *(it.ptr->pair);
+}
+UnorderedMapIterator find(UnorderedMapDescriptor* desc,void* key,int keysize)
+{
+    int hash=desc->hashfunc(key,keysize);
+    HashListNode* p=desc->begin[hash].first;
+    for(;p->next!=NULL;)
+    {
+        if(!memcpy(key,p->pair->key,keysize))
+        {
+            UnorderedMapIterator temp;
+            temp.ptr=&(desc->begin[hash]);
+            temp.ptr=p;
+            return temp;
+        }
+        p=p->next;
+    }
+    if(p->next==NULL)
+    {
+        printf("No such result.\n");
+    }
+}
+void destructor(UnorderedMapDescriptor *desc)
+{
+    clear(desc);
+    free(desc->begin);
+}
