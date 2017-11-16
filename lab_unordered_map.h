@@ -1,6 +1,7 @@
 #ifndef LAB_UNORDERED_MAP_H
 #define LAB_UNORDERED_MAP_H
 
+#include <string.h>
 #include "labafx.h"
 typedef struct hash_list_node
 {
@@ -65,8 +66,8 @@ int size(UnorderedMapDescriptor* desc)
 void rehash(int hash_size,UnorderedMapDescriptor* desc)
 {
     unsigned long int prime_hash_list[26]={53,97,193,389,769,1543,3079,6151,12289,24593,49157,98317,196613,393241,
-                                    786433,1572869,3145739,6291469,12582917,25165843,50331653,100663319,
-                                     201326611,402653189,805306457,1610612741};
+                                           786433,1572869,3145739,6291469,12582917,25165843,50331653,100663319,
+                                           201326611,402653189,805306457,1610612741};
     for(int i=0;i<26;i++)
     {
         if(prime_hash_list[i]>hash_size)
@@ -248,7 +249,7 @@ UnorderedMapIterator find(UnorderedMapDescriptor* desc,void* key,int keysize)
         if(!memcpy(key,p->pair->key,keysize))
         {
             UnorderedMapIterator temp;
-            temp.ptr=&(desc->begin[hash]);
+            temp.bucket=&(desc->begin[hash]);
             temp.ptr=p;
             return temp;
         }
@@ -265,16 +266,16 @@ void destructor(UnorderedMapDescriptor *desc)
     free(desc->begin);
 }
 UnorderedMapAPI um={
-                        constructor,
-                        size,
-                        insert,
-                        erase,
-                        clear,
-                        begin,
-                        end,
-                        iter_next,
-                        iter_prev,
-                        iter_dereference,
-                        find,
-                        destructor
+        constructor,
+        size,
+        insert,
+        erase,
+        clear,
+        begin,
+        end,
+        iter_next,
+        iter_prev,
+        iter_dereference,
+        find,
+        destructor
 };
