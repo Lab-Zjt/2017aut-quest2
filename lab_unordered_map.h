@@ -120,6 +120,7 @@ void insert(UnorderedMapDescriptor* desc,Pair kvpair)
         desc->begin[hash].first=new_node;
         new_node->prev=NULL;
     }
+    desc->size++;
 }
 void erase(UnorderedMapDescriptor* desc,UnorderedMapIterator iter)
 {
@@ -244,9 +245,9 @@ UnorderedMapIterator find(UnorderedMapDescriptor* desc,void* key,int keysize)
 {
     int hash=desc->hashfunc(key,keysize);
     HashListNode* p=desc->begin[hash].first;
-    for(;p->next!=NULL;)
+    for(;p->next!=NULL||p==desc->begin[hash].first;)
     {
-        if(!memcpy(key,p->pair->key,keysize))
+        if(!memcmp(key,p->pair->key,keysize))
         {
             UnorderedMapIterator temp;
             temp.bucket=&(desc->begin[hash]);
