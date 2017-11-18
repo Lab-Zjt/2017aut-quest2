@@ -33,9 +33,9 @@ RB_Node* RB_right_rotate(RB_Node *p)
     t->color = temp_color;
     t->father=p->father;
     p->father=t;
-    if(t->left!=NULL)
+    if(t->right!=NULL)
     {
-        t->left->father=p;
+        t->right->father=p;
     }
     p->left = t->right;
     t->right = p;
@@ -49,9 +49,9 @@ RB_Node* RB_left_rotate(RB_Node *p)
     t->color = temp_color;
     t->father=p->father;
     p->father=t;
-    if(t->right!=NULL)
+    if(t->left!=NULL)
     {
-        t->right->father=p;
+        t->left->father=p;
     }
     p->right = t->left;
     t->left = p;

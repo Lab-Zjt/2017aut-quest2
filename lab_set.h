@@ -70,6 +70,10 @@ SetIterator iter_next(SetIterator it)
             end_node->key_size=0;
             it.ptr=end_node;
         }
+        else
+        {
+            it.ptr=t;
+        }
     }
     return it;
 }
