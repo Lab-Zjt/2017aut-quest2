@@ -124,7 +124,7 @@ void* iter_dereference(VectorIterator iter)
 }
 VectorIterator iter_move(VectorIterator iter,int delta)
 {
-    iter.ptr+=iter.data_size;
+    iter.ptr+=(iter.data_size*delta);
     return iter;
 }// simulates: iter+8;
 void pop_back(VectorDescriptor* desc)
